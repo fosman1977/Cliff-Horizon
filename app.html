@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Derivative Pricing - Cliff Horizon</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .form-section {
+            background: #f8fafc;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+
+        .form-section h2 {
+            color: #1e3c72;
+            margin-bottom: 20px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #475569;
+        }
+
+        input, textarea {
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+
+        .btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results {
+            background: #f1f5f9;
+            padding: 30px;
+            border-radius: 12px;
+            margin-top: 30px;
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .results h2 {
+            color: #1e3c72;
+            margin-bottom: 20px;
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .result-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .result-label {
+            font-size: 0.9em;
+            color: #64748b;
+            margin-bottom: 5px;
+        }
+
+        .result-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .error {
+            background: #fee2e2;
+            border: 2px solid #ef4444;
+            color: #991b1b;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .historical-input {
+            width: 100%;
+            min-height: 80px;
+        }
+
+        .helper-text {
+            font-size: 0.85em;
+            color: #64748b;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌧️ Weather Derivative Pricing</h1>
+            <p>Professional-grade pricing engine for rainfall-based derivatives</p>
+        </header>
+
+        <div class="content">
+            <div class="form-section">
+                <h2>Contract Specification</h2>
+                <form id="pricingForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="location_name">Location Name</label>
+                            <input type="text" id="location_name" value="Bankot, India" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="location_lat">Latitude</label>
+                            <input type="number" id="location_lat" step="0.001" value="17.895" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="location_lon">Longitude</label>
+                            <input type="number" id="location_lon" step="0.001" value="73.052" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="observation_month">Month (1-12)</label>
+                            <input type="number" id="observation_month" min="1" max="12" value="10" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="observation_year">Year</label>
+                            <input type="number" id="observation_year" min="2025" value="2025" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="rainfall_threshold_mm">Rainfall Threshold (mm/day)</label>
+                            <input type="number" id="rainfall_threshold_mm" step="0.1" value="25.0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="strike_rainy_days">Strike (Rainy Days)</label>
+                            <input type="number" id="strike_rainy_days" value="11" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="payout_rate_per_day">Payout Rate per Day ($)</label>
+                            <input type="number" id="payout_rate_per_day" value="14000" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="maximum_payout_days">Maximum Payout Days</label>
+                            <input type="number" id="maximum_payout_days" value="7" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 20px;">
+                        <label for="historical_data">Historical Data (comma-separated rainy day counts)</label>
+                        <textarea id="historical_data" class="historical-input" required>7, 10, 9, 12, 8, 14, 9, 11, 8, 10</textarea>
+                        <div class="helper-text">Enter 5-10 years of historical rainy day counts for the observation month</div>
+                    </div>
+
+                    <button type="submit" class="btn">Calculate Premium</button>
+                </form>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Calculating premium with Monte Carlo simulation...</p>
+            </div>
+
+            <div class="error" id="error"></div>
+
+            <div class="results" id="results">
+                <h2>Pricing Results</h2>
+
+                <div class="result-grid">
+                    <div class="result-card">
+                        <div class="result-label">Quoted Premium</div>
+                        <div class="result-value" id="gross_premium">-</div>
+                    </div>
+                    <div class="result-card">
+                        <div class="result-label">Expected Payout</div>
+                        <div class="result-value" id="expected_payout">-</div>
+                    </div>
+                    <div class="result-card">
+                        <div class="result-label">Loss Ratio</div>
+                        <div class="result-value" id="loss_ratio">-</div>
+                    </div>
+                    <div class="result-card">
+                        <div class="result-label">Expected ROE</div>
+                        <div class="result-value" id="expected_roe">-</div>
+                    </div>
+                </div>
+
+                <div class="form-section" style="margin-top: 30px;">
+                    <h3 style="margin-bottom: 15px;">Risk Metrics (10,000 simulations)</h3>
+                    <div class="result-grid">
+                        <div class="result-card">
+                            <div class="result-label">VaR (99%)</div>
+                            <div class="result-value" id="var_99">-</div>
+                        </div>
+                        <div class="result-card">
+                            <div class="result-label">CVaR (99%)</div>
+                            <div class="result-value" id="cvar_99">-</div>
+                        </div>
+                        <div class="result-card">
+                            <div class="result-label">Trigger Frequency</div>
+                            <div class="result-value" id="trigger_frequency">-</div>
+                        </div>
+                        <div class="result-card">
+                            <div class="result-label">Capital Required</div>
+                            <div class="result-value" id="capital_required">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('pricingForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Hide previous results/errors
+            document.getElementById('results').classList.remove('show');
+            document.getElementById('error').classList.remove('show');
+            document.getElementById('loading').classList.add('show');
+
+            try {
+                // Parse historical data
+                const historicalDataStr = document.getElementById('historical_data').value;
+                const historicalData = historicalDataStr.split(',').map(x => parseInt(x.trim()));
+
+                // Build request
+                const requestData = {
+                    contract: {
+                        location_name: document.getElementById('location_name').value,
+                        location_lat: parseFloat(document.getElementById('location_lat').value),
+                        location_lon: parseFloat(document.getElementById('location_lon').value),
+                        observation_month: parseInt(document.getElementById('observation_month').value),
+                        observation_year: parseInt(document.getElementById('observation_year').value),
+                        rainfall_threshold_mm: parseFloat(document.getElementById('rainfall_threshold_mm').value),
+                        strike_rainy_days: parseInt(document.getElementById('strike_rainy_days').value),
+                        payout_rate_per_day: parseFloat(document.getElementById('payout_rate_per_day').value),
+                        maximum_payout_days: parseInt(document.getElementById('maximum_payout_days').value)
+                    },
+                    historical_data: historicalData
+                };
+
+                // Call API
+                const response = await fetch('/api/price', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || 'Failed to price contract');
+                }
+
+                // Display results
+                const results = data.results;
+
+                document.getElementById('gross_premium').textContent =
+                    '$' + results.pricing.gross_premium.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+                document.getElementById('expected_payout').textContent =
+                    '$' + results.pricing.expected_payout.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+                document.getElementById('loss_ratio').textContent =
+                    results.pricing.expected_loss_ratio.toFixed(1) + '%';
+
+                document.getElementById('expected_roe').textContent =
+                    results.profitability.expected_roe.toFixed(1) + '%';
+
+                document.getElementById('var_99').textContent =
+                    '$' + results.simulation.var_99.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+
+                document.getElementById('cvar_99').textContent =
+                    '$' + results.simulation.cvar_99.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+
+                document.getElementById('trigger_frequency').textContent =
+                    (results.simulation.trigger_frequency * 100).toFixed(1) + '%';
+
+                document.getElementById('capital_required').textContent =
+                    '$' + results.pricing.capital_required.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+
+                document.getElementById('loading').classList.remove('show');
+                document.getElementById('results').classList.add('show');
+
+            } catch (error) {
+                document.getElementById('loading').classList.remove('show');
+                document.getElementById('error').textContent = 'Error: ' + error.message;
+                document.getElementById('error').classList.add('show');
+            }
+        });
+    </script>
+</body>
+</html>
