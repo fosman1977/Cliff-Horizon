@@ -12,7 +12,7 @@ from typing import Dict, Tuple, Optional, List
 from dataclasses import dataclass
 import warnings
 
-from src.config import (
+from config import (
     CANDIDATE_DISTRIBUTIONS,
     VARIANCE_MEAN_RATIO_THRESHOLD,
     MIN_SAMPLE_SIZE_PARAMETRIC,
