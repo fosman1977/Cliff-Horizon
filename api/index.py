@@ -65,6 +65,8 @@ def price_contract():
     {
         "contract": {
             "location_name": "Bankot, India",
+            "location_lat": 17.895,
+            "location_lon": 73.052,
             "observation_month": 10,
             "observation_year": 2025,
             "rainfall_threshold_mm": 25.0,

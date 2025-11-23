@@ -9,15 +9,15 @@ from typing import Dict, Optional, Tuple
 from datetime import datetime
 import warnings
 
-from src.config import (
+from config import (
     ContractSpecification,
     PricingParameters,
     SimulationParameters,
     validate_contract
 )
-from src.models.distributions import fit_distribution, DistributionFit
-from src.models.pricing import PricingEngine, PricingResults, calculate_break_even_trigger_rate
-from src.simulation.monte_carlo import MonteCarloSimulator, SimulationResults
+from distributions import fit_distribution, DistributionFit
+from pricing import PricingEngine, PricingResults, calculate_break_even_trigger_rate
+from monte_carlo import MonteCarloSimulator, SimulationResults
 
 
 class WeatherDerivativeSimulator:

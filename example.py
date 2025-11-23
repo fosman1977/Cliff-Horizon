@@ -5,8 +5,8 @@ This script demonstrates how to use the simulator to price a contract.
 """
 
 import numpy as np
-from src.simulator import WeatherDerivativeSimulator, create_example_contract, create_example_historical_data
-from src.config import ContractSpecification, PricingParameters, SimulationParameters
+from simulator import WeatherDerivativeSimulator, create_example_contract, create_example_historical_data
+from config import ContractSpecification, PricingParameters, SimulationParameters
 
 
 def example_basic_pricing():
